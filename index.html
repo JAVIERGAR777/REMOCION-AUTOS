@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sistema Inteligente de Vehículos</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        #map { 
+            width: 100%; 
+            height: 100vh; 
+        }
+        #alerta-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            background: linear-gradient(135deg, #ff4444, #ff0000);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+            animation: pulse 1.5s infinite;
+            border: 2px solid white;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+            50% { transform: scale(1.02); box-shadow: 0 0 30px rgba(255, 0, 0, 0.9); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); }
+        }
+        .blink-marker {
+            animation: blink 0.8s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .custom-popup {
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .custom-popup button {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .custom-popup button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="alerta-panel">
+        <h3 style="margin-top: 0; text-align: center;">🚨 ¡VEHÍCULO CERCANO!</h3>
+        <div id="alerta-contenido"></div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Configuración
+        const SHEETBEST_URL = "https://api.sheetbest.com/sheets/e9a91f99-312f-43c1-875e-1d8dcbe3a7d5";
+        let vehiculos = [];
+        let userLocation = null;
+        let marcadorCercano = null;
+        let intervaloMonitoreo;
+        let userMarker = null;
+
+        // Función para calcular distancia (Haversine mejorada)
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // Mostrar alerta con efecto de emergencia
+        function mostrarAlerta(vehiculo, distancia) {
+            const panel = document.getElementById('alerta-panel');
+            const contenido = document.getElementById('alerta-contenido');
+            
+            contenido.innerHTML = `
+                <p><strong>📍 Dirección:</strong> ${vehiculo.Direccion || 'Sin dirección'}</p>
+                <p><strong>📏 Distancia:</strong> ${distancia.toFixed(2)} km</p>
+                <p><strong>📝 Descripción:</strong> ${vehiculo.Descripcion || 'No disponible'}</p>
+            `;
+            
+            panel.style.display = 'block';
+            
+            // Efecto de titileo en el marcador
+            if (vehiculo.marker) {
+                vehiculo.marker.getElement().classList.add('blink-marker');
+                vehiculo.marker.setStyle({
+                    fillColor: '#ff0000',
+                    color: '#ff0000'
+                });
+                marcadorCercano = vehiculo.marker;
+            }
+            
+            // Sonido de alerta (opcional)
+            try {
+                new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3').play();
+            } catch(e) { console.log("Error en sonido:", e); }
+        }
+
+        // Ocultar alerta
+        function ocultarAlerta() {
+            document.getElementById('alerta-panel').style.display = 'none';
+            if (marcadorCercano) {
+                marcadorCercano.getElement().classList.remove('blink-marker');
+                marcadorCercano.setStyle({
+                    fillColor: 'red',
+                    color: 'red'
+                });
+                marcadorCercano = null;
+            }
+        }
+
+        // Monitorear vehículos cercanos
+        function monitorearCercania() {
+            if (!userLocation || vehiculos.length === 0) return;
+            
+            let vehiculoMasCercano = null;
+            let minimaDistancia = Infinity;
+            
+            vehiculos.forEach(vehiculo => {
+                const distancia = calcularDistancia(
+                    userLocation.lat, userLocation.lng,
+                    vehiculo.lat, vehiculo.lng
+                );
+                
+                if (distancia < minimaDistancia) {
+                    minimaDistancia = distancia;
+                    vehiculoMasCercano = vehiculo;
+                }
+            });
+            
+            // Mostrar alerta si está a menos de 1 km
+            if (vehiculoMasCercano && minimaDistancia < 1.0) {
+                mostrarAlerta(vehiculoMasCercano, minimaDistancia);
+            } else {
+                ocultarAlerta();
+            }
+        }
+
+        // Función para marcar como levantado (¡Ahora sí funciona!)
+        async function marcarLevantado(id) {
+            try {
+                const vehiculo = vehiculos.find(v => v.ID == id);
+                if (!vehiculo) throw new Error("Vehículo no encontrado");
+                
+                // Preparamos los datos EXACTAMENTE como los espera tu Sheet
+                const payload = {
+                    "ID": vehiculo.ID.toString(),
+                    "Direccion": vehiculo.Direccion || "",
+                    "Coordenadas": `${vehiculo.lat}, ${vehiculo.lng}`,
+                    "Descripcion": vehiculo.Descripcion || "",
+                    "condicion": "Levantado",
+                    "fecha_levantado": new Date().toLocaleDateString('es-AR')
+                };
+                
+                console.log("Enviando a SheetBest:", payload);
+                
+                const response = await fetch(SHEETBEST_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error("Error en la API");
+                
+                // Eliminar del mapa y del array
+                if (vehiculo.marker) {
+                    map.removeLayer(vehiculo.marker);
+                }
+                vehiculos = vehiculos.filter(v => v.ID != id);
+                
+                // Si era el vehículo cercano, ocultar alerta
+                if (marcadorCercano && marcadorCercano === vehiculo.marker) {
+                    ocultarAlerta();
+                }
+                
+                alert(`✅ Vehículo ${id} marcado como levantado correctamente`);
+                
+            } catch (error) {
+                console.error("Error completo:", error);
+                alert(`❌ Error al actualizar: ${error.message}`);
+            }
+        }
+
+        // Inicializar el mapa
+        const map = L.map('map').setView([-34.9291, -58.0071], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Cargar datos y configurar todo
+        async function initMap() {
+            try {
+                const response = await fetch(SHEETBEST_URL);
+                if (!response.ok) throw new Error("Error al cargar datos");
+                
+                const data = await response.json();
+                
+                vehiculos = data
+                    .filter(v => v.condicion !== "Levantado")
+                    .map(v => {
+                        const coords = v.Coordenadas.split(',').map(Number);
+                        return {
+                            ...v,
+                            lat: coords[0],
+                            lng: coords[1],
+                            marker: null
+                        };
+                    });
+                
+                // Añadir marcadores al mapa
+                vehiculos.forEach(v => {
+                    v.marker = L.circleMarker([v.lat, v.lng], {
+                        color: 'red',
+                        fillColor: 'red',
+                        fillOpacity: 0.9,
+                        radius: 12,
+                        weight: 2
+                    }).addTo(map);
+                    
+                    v.marker.bindPopup(`
+                        <div class="custom-popup">
+                            <h4 style="margin: 0 0 10px 0;">Vehículo #${v.ID}</h4>
+                            <p><strong>Dirección:</strong> ${v.Direccion || 'No especificada'}</p>
+                            <p><strong>Descripción:</strong> ${v.Descripcion || 'No disponible'}</p>
+                            <button onclick="window.marcarComoLevantado(${v.ID})">
+                                🚗 MARCAR COMO LEVANTADO
+                            </button>
+                        </div>
+                    `);
+                });
+                
+                // Configurar geolocalización con alta precisión
+                map.locate({
+                    setView: true,
+                    maxZoom: 14,
+                    watch: true,
+                    enableHighAccuracy: true,
+                    timeout: 10000
+                });
+                
+                map.on('locationfound', e => {
+                    userLocation = e.latlng;
+                    
+                    // Actualizar o crear marcador de usuario
+                    if (!userMarker) {
+                        userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+                            color: 'blue',
+                            fillColor: '#3388ff',
+                            fillOpacity: 1,
+                            radius: 10,
+                            weight: 3
+                        }).addTo(map).bindPopup("¡Estás aquí!");
+                    } else {
+                        userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+                    }
+                    
+                    // Iniciar monitoreo de cercanía cada 3 segundos
+                    if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
+                    intervaloMonitoreo = setInterval(monitorearCercania, 3000);
+                    monitorearCercania(); // Llamada inicial
+                });
+                
+                map.on('locationerror', e => {
+                    console.error("Error de geolocalización:", e.message);
+                    alert("Activa la ubicación para usar todas las funciones");
+                });
+                
+                // Hacer la función global para los popups
+                window.marcarComoLevantado = marcarLevantado;
+                
+            } catch (error) {
+                console.error("Error inicial:", error);
+                alert("Error al cargar los datos. Recarga la página.");
+            }
+        }
+        
+        // Iniciar todo el sistema
+        initMap();
+    </script>
+</body>
+</html>
