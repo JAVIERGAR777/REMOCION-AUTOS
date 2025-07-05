@@ -32,18 +32,6 @@
             max-height: 40vh;
             overflow-y: auto;
         }
-        #distancia-badge {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            z-index: 1000;
-            font-size: 14px;
-            display: none;
-        }
         .marcador-fijo {
             position: relative !important;
             transition: none !important;
@@ -68,7 +56,7 @@
         #gps-status {
             position: fixed;
             top: 15px;
-            left: 15px;
+            right: 15px;
             background: rgba(0,0,0,0.7);
             color: white;
             padding: 8px 12px;
@@ -123,14 +111,10 @@
         </div>
         <div id="alerta-contenido"></div>
     </div>
-    <div id="distancia-badge">
-        <span id="distancia-texto">0.5 km</span> de distancia
-    </div>
     <div id="contador-alertas">Alertas: <span id="contador-alertas-num2">0</span></div>
     <div id="gps-status">📍 Mi ubicación</div>
     <div id="map"></div>
 
-    <!-- Audio oculto para precargar sonidos -->
     <audio id="alerta-sonido" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
     </audio>
@@ -139,7 +123,7 @@
     <script>
         const SHEETBEST_URL = "https://api.sheetbest.com/sheets/e9a91f99-312f-43c1-875e-1d8dcbe3a7d5";
         const DISTANCIA_ALERTA_KM = 0.5; 
-        const INTERVALO_MONITOREO = 3000;
+        const INTERVALO_MONITOREO = 3000; 
         let vehiculos = [];
         let userLocation = null;
         let alertasActivas = [];
@@ -168,7 +152,7 @@
                 color: '#ff0000',
                 fillColor: '#ff4444',
                 fillOpacity: 0.9,
-                radius: 8,
+                radius: 5, 
                 weight: 2,
                 className: 'marcador-fijo'
             }).addTo(map);
@@ -189,7 +173,6 @@
         function mostrarAlertas(vehiculosCercanos) {
             const alerta = document.getElementById('alerta-container');
             const contenido = document.getElementById('alerta-contenido');
-            const distanciaBadge = document.getElementById('distancia-badge');
             const contadorAlertas = document.getElementById('contador-alertas');
             const contadorNum = document.getElementById('contador-alertas-num');
             const contadorNum2 = document.getElementById('contador-alertas-num2');
@@ -212,11 +195,6 @@
             contenido.innerHTML = htmlContent;
             alerta.style.display = 'block';
             
-            if (vehiculosCercanos.length > 0) {
-                distanciaBadge.style.display = 'block';
-                document.getElementById('distancia-texto').textContent = vehiculosCercanos[0].distancia.toFixed(2);
-            }
-            
             const numAlertas = vehiculosCercanos.length;
             contadorNum.textContent = numAlertas;
             contadorNum2.textContent = numAlertas;
@@ -238,11 +216,16 @@
 
         function ocultarAlertas() {
             document.getElementById('alerta-container').style.display = 'none';
-            document.getElementById('distancia-badge').style.display = 'none';
             document.getElementById('contador-alertas').style.display = 'none';
             alertasActivas = [];
             document.getElementById('contador-alertas-num').textContent = '0';
             document.getElementById('contador-alertas-num2').textContent = '0';
+        }
+
+        function centrarEnMiUbicacion() {
+            if (userLocation) {
+                map.setView([userLocation.lat, userLocation.lng], 16);
+            }
         }
 
         function verificarCercania() {
@@ -273,13 +256,6 @@
                 ocultarAlertas();
             }
         }
-
-        function centrarEnMiUbicacion() {
-            if (userLocation) {
-                map.setView([userLocation.lat, userLocation.lng], 16);
-            }
-        }
-
         async function marcarLevantado(id) {
             try {
                 const vehiculo = vehiculos.find(v => v.ID == id);
@@ -308,7 +284,7 @@
                 alertasActivas = alertasActivas.filter(a => a.vehiculo.ID != id);
                 
                 alert(`✅ Vehículo ${id} marcado como levantado`);
-                verificarCercania();
+                verificarCercania(); 
                 
             } catch (error) {
                 console.error("Error:", error);
@@ -316,13 +292,11 @@
             }
         }
 
-        // Inicializar mapa
         const map = L.map('map').setView([-34.9291, -58.0071], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Cargar datos
         async function init() {
             try {
                 const response = await fetch(SHEETBEST_URL);
@@ -360,7 +334,7 @@
                             color: '#3388ff',
                             fillColor: '#3388ff',
                             fillOpacity: 1,
-                            radius: 8, 
+                            radius: 5, 
                             weight: 3
                         }).addTo(map).bindPopup("¡Estás aquí!");
                     } else {
