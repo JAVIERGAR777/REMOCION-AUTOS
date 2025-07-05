@@ -18,20 +18,18 @@
         }
         #alerta-container {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
             z-index: 1000;
-            width: 90%;
-            max-width: 500px;
             background: linear-gradient(135deg, #ff5f5f, #ff1c1c);
             color: white;
-            padding: 15px;
+            padding: 10px;
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(255, 0, 0, 0.4);
             display: none;
             border: 2px solid white;
-            max-height: 60vh;
+            max-height: 40vh;
             overflow-y: auto;
         }
         #distancia-badge {
@@ -59,12 +57,13 @@
             background: linear-gradient(135deg, #4CAF50, #2E7D32);
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 6px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 8px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 14px;
         }
         #gps-status {
             position: fixed;
@@ -76,12 +75,14 @@
             border-radius: 20px;
             z-index: 1000;
             font-size: 14px;
+            cursor: pointer;
         }
         .alerta-item {
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
             background: rgba(255,255,255,0.2);
-            border-radius: 8px;
+            border-radius: 6px;
+            font-size: 14px;
         }
         .alerta-item:last-child {
             margin-bottom: 0;
@@ -98,20 +99,38 @@
             font-size: 12px;
             display: none;
         }
+        #alerta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            position: sticky;
+            top: 0;
+            background: #ff1c1c;
+            padding: 5px 0;
+            z-index: 1;
+        }
+        #alerta-contenido {
+            padding-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div id="alerta-container">
-        <h3 style="margin: 0 0 10px 0; text-align: center;">🚨 VEHÍCULOS CERCANOS (<span id="contador-alertas-num">0</span>)</h3>
+        <div id="alerta-header">
+            <h3 style="margin: 0; font-size: 16px;">🚨 VEHÍCULOS CERCANOS</h3>
+            <span id="contador-alertas-num" style="background: white; color: #ff1c1c; padding: 2px 8px; border-radius: 10px; font-weight: bold;">0</span>
+        </div>
         <div id="alerta-contenido"></div>
     </div>
     <div id="distancia-badge">
         <span id="distancia-texto">0.5 km</span> de distancia
     </div>
-    <div id="contador-alertas">Alertas activas: <span id="contador-alertas-num2">0</span></div>
-    <div id="gps-status">⌛ Buscando GPS...</div>
+    <div id="contador-alertas">Alertas: <span id="contador-alertas-num2">0</span></div>
+    <div id="gps-status">📍 Mi ubicación</div>
     <div id="map"></div>
 
+    <!-- Audio oculto para precargar sonidos -->
     <audio id="alerta-sonido" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
     </audio>
@@ -119,23 +138,20 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         const SHEETBEST_URL = "https://api.sheetbest.com/sheets/e9a91f99-312f-43c1-875e-1d8dcbe3a7d5";
-        const DISTANCIA_ALERTA_KM = 0.5; // 500 metros
-        const INTERVALO_MONITOREO = 3000; // 3 segundos
+        const DISTANCIA_ALERTA_KM = 0.5; 
+        const INTERVALO_MONITOREO = 3000;
         let vehiculos = [];
         let userLocation = null;
         let alertasActivas = [];
         let intervaloMonitoreo;
         let userMarker = null;
 
-        // Elementos UI
         const gpsStatus = document.getElementById('gps-status');
         const alertSound = document.getElementById('alerta-sonido');
 
-        // Precargar sonido
         alertSound.volume = 0.7;
         alertSound.load();
 
-        // Cálculo de distancia precisa
         function calcularDistancia(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -152,15 +168,15 @@
                 color: '#ff0000',
                 fillColor: '#ff4444',
                 fillOpacity: 0.9,
-                radius: 12,
+                radius: 8,
                 weight: 2,
                 className: 'marcador-fijo'
             }).addTo(map);
             
             marker.bindPopup(`
                 <div class="popup-custom">
-                    <h4 style="margin: 0 0 8px 0;">Vehículo #${vehiculo.ID}</h4>
-                    <p><strong>Dirección:</strong> ${vehiculo.Direccion || 'No especificada'}</p>
+                    <h4 style="margin: 0 0 8px 0; font-size: 16px;">Vehículo #${vehiculo.ID}</h4>
+                    <p style="font-size: 14px;"><strong>Dirección:</strong> ${vehiculo.Direccion || 'No especificada'}</p>
                     <button class="btn-levantado" onclick="window.marcarComoLevantado(${vehiculo.ID})">
                         🚗 MARCAR COMO LEVANTADO
                     </button>
@@ -178,17 +194,16 @@
             const contadorNum = document.getElementById('contador-alertas-num');
             const contadorNum2 = document.getElementById('contador-alertas-num2');
             
-            // Ordenar por distancia (más cercano primero)
             vehiculosCercanos.sort((a, b) => a.distancia - b.distancia);
             
             let htmlContent = '';
             vehiculosCercanos.forEach(v => {
                 htmlContent += `
                     <div class="alerta-item">
-                        <p><strong>📍 ${v.vehiculo.Direccion || 'Sin dirección'}</strong></p>
-                        <p>${v.vehiculo.Descripcion || 'Sin descripción'}</p>
-                        <p style="text-align: center; margin: 10px 0 0 0; font-weight: bold;">
-                            A ${v.distancia.toFixed(2)} km de ti
+                        <p style="margin: 0 0 5px 0;"><strong>📍 ${v.vehiculo.Direccion || 'Sin dirección'}</strong></p>
+                        <p style="margin: 0 0 5px 0; font-size: 13px;">${v.vehiculo.Descripcion || 'Sin descripción'}</p>
+                        <p style="margin: 0; text-align: right; font-size: 13px; font-weight: bold;">
+                            A ${v.distancia.toFixed(2)} km
                         </p>
                     </div>
                 `;
@@ -197,20 +212,17 @@
             contenido.innerHTML = htmlContent;
             alerta.style.display = 'block';
             
-            // Mostrar distancia del más cercano
             if (vehiculosCercanos.length > 0) {
                 distanciaBadge.style.display = 'block';
                 document.getElementById('distancia-texto').textContent = vehiculosCercanos[0].distancia.toFixed(2);
             }
             
-            // Actualizar contador
             const numAlertas = vehiculosCercanos.length;
             contadorNum.textContent = numAlertas;
             contadorNum2.textContent = numAlertas;
             
             if (numAlertas > 0) {
                 contadorAlertas.style.display = 'block';
-                // Reproducir sonido solo si hay nuevas alertas
                 if (alertasActivas.length !== numAlertas) {
                     try {
                         alertSound.currentTime = 0;
@@ -262,7 +274,12 @@
             }
         }
 
-        // Marcar como levantado
+        function centrarEnMiUbicacion() {
+            if (userLocation) {
+                map.setView([userLocation.lat, userLocation.lng], 16);
+            }
+        }
+
         async function marcarLevantado(id) {
             try {
                 const vehiculo = vehiculos.find(v => v.ID == id);
@@ -288,11 +305,10 @@
                 if (vehiculo.marker) map.removeLayer(vehiculo.marker);
                 vehiculos = vehiculos.filter(v => v.ID != id);
                 
-                // Verificar si el vehículo estaba en alertas activas
                 alertasActivas = alertasActivas.filter(a => a.vehiculo.ID != id);
                 
                 alert(`✅ Vehículo ${id} marcado como levantado`);
-                verificarCercania(); // Actualizar alertas inmediatamente
+                verificarCercania();
                 
             } catch (error) {
                 console.error("Error:", error);
@@ -338,28 +354,22 @@
                 
                 map.on('locationfound', e => {
                     userLocation = e.latlng;
-                    const precision = e.accuracy;
-                    
-                    gpsStatus.textContent = `📍 GPS (Precisión: ${precision.toFixed(0)}m)`;
-                    gpsStatus.style.background = precision < 50 ? '#4CAF50' : '#FFC107';
                     
                     if (!userMarker) {
                         userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
                             color: '#3388ff',
                             fillColor: '#3388ff',
                             fillOpacity: 1,
-                            radius: 10,
+                            radius: 8, 
                             weight: 3
                         }).addTo(map).bindPopup("¡Estás aquí!");
                     } else {
                         userMarker.setLatLng([userLocation.lat, userLocation.lng]);
                     }
                     
-                    if (precision < 100) {
-                        if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
-                        intervaloMonitoreo = setInterval(verificarCercania, INTERVALO_MONITOREO);
-                        verificarCercania();
-                    }
+                    if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
+                    intervaloMonitoreo = setInterval(verificarCercania, INTERVALO_MONITOREO);
+                    verificarCercania();
                 });
                 
                 map.on('locationerror', e => {
@@ -367,6 +377,8 @@
                     gpsStatus.style.background = '#F44336';
                     console.error("Error GPS:", e.message);
                 });
+                
+                gpsStatus.addEventListener('click', centrarEnMiUbicacion);
                 
                 window.marcarComoLevantado = marcarLevantado;
                 
