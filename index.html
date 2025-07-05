@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Alerta de Vehículos Cercanos</title>
+    <title>Alerta Vehículos Quemados - UltraPreciso</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -10,6 +10,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
         }
         #map {
             width: 100%;
@@ -29,22 +30,24 @@
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(255, 0, 0, 0.4);
             display: none;
-            animation: alerta-pulse 1.5s infinite;
             border: 2px solid white;
         }
-        @keyframes alerta-pulse {
-            0% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.03); }
-            100% { transform: translateX(-50%) scale(1); }
+        #distancia-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            z-index: 1000;
+            font-size: 14px;
+            display: none;
         }
-        .marcador-cercano {
-            animation: marcador-alerta 0.8s infinite;
-            filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
-        }
-        @keyframes marcador-alerta {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
+        .marcador-fijo {
+            position: relative !important;
+            transition: none !important;
+            animation: none !important;
         }
         .popup-custom {
             border-radius: 10px;
@@ -60,23 +63,17 @@
             margin-top: 10px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
         }
-        .btn-levantado:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        #distancia-badge {
+        #gps-status {
             position: fixed;
             top: 15px;
-            right: 15px;
+            left: 15px;
             background: rgba(0,0,0,0.7);
             color: white;
             padding: 8px 12px;
             border-radius: 20px;
             z-index: 1000;
             font-size: 14px;
-            display: none;
         }
     </style>
 </head>
@@ -88,6 +85,7 @@
     <div id="distancia-badge">
         <span id="distancia-texto">0.5 km</span> de distancia
     </div>
+    <div id="gps-status">⌛ Buscando GPS...</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -101,7 +99,10 @@
         let intervaloMonitoreo;
         let userMarker = null;
 
-        // Cálculo de distancia (preciso)
+        // Elementos UI
+        const gpsStatus = document.getElementById('gps-status');
+
+        // Cálculo de distancia precisa
         function calcularDistancia(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -113,32 +114,48 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // Mostrar alerta de cercanía
-        function mostrarAlertaCercania(vehiculo, distancia) {
+        // Crear marcadores estáticos
+        function crearMarcadorEstable(vehiculo) {
+            const marker = L.circleMarker([vehiculo.lat, vehiculo.lng], {
+                color: '#ff0000',
+                fillColor: '#ff4444',
+                fillOpacity: 0.9,
+                radius: 12,
+                weight: 2,
+                className: 'marcador-fijo'
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div class="popup-custom">
+                    <h4 style="margin: 0 0 8px 0;">Vehículo #${vehiculo.ID}</h4>
+                    <p><strong>Dirección:</strong> ${vehiculo.Direccion || 'No especificada'}</p>
+                    <button class="btn-levantado" onclick="window.marcarComoLevantado(${vehiculo.ID})">
+                        🚗 MARCAR COMO LEVANTADO
+                    </button>
+                </div>
+            `);
+            
+            return marker;
+        }
+
+        // Mostrar alerta
+        function mostrarAlerta(vehiculo, distancia) {
             const alerta = document.getElementById('alerta-container');
             const contenido = document.getElementById('alerta-contenido');
             const distanciaBadge = document.getElementById('distancia-badge');
             const distanciaTexto = document.getElementById('distancia-texto');
             
-            // Actualizar contenido
             contenido.innerHTML = `
                 <p><strong>📍 ${vehiculo.Direccion || 'Sin dirección'}</strong></p>
                 <p>${vehiculo.Descripcion || 'Sin descripción'}</p>
                 <p style="text-align: center; margin: 10px 0 0 0; font-weight: bold;">
-                    A ${distancia.toFixed(2)} km de tu posición
+                    A ${distancia.toFixed(2)} km de ti
                 </p>
             `;
             
-            // Mostrar elementos
             alerta.style.display = 'block';
             distanciaBadge.style.display = 'block';
             distanciaTexto.textContent = distancia.toFixed(2);
-            
-            // Efecto en el marcador
-            if (vehiculo.marker) {
-                vehiculo.marker.getElement().classList.add('marcador-cercano');
-                marcadorCercano = vehiculo.marker;
-            }
             
             // Sonido de alerta
             try {
@@ -150,14 +167,9 @@
         function ocultarAlertas() {
             document.getElementById('alerta-container').style.display = 'none';
             document.getElementById('distancia-badge').style.display = 'none';
-            
-            if (marcadorCercano) {
-                marcadorCercano.getElement().classList.remove('marcador-cercano');
-                marcadorCercano = null;
-            }
         }
 
-        // Monitoreo constante de cercanía
+        // Verificar cercanía
         function verificarCercania() {
             if (!userLocation || vehiculos.length === 0) return;
             
@@ -176,21 +188,19 @@
                 }
             });
             
-            // Mostrar alerta si está dentro del rango
             if (vehiculoCercano && minDistancia <= DISTANCIA_ALERTA_KM) {
-                mostrarAlertaCercania(vehiculoCercano, minDistancia);
+                mostrarAlerta(vehiculoCercano, minDistancia);
             } else {
                 ocultarAlertas();
             }
         }
 
-        // Marcar como levantado (funcional)
+        // Marcar como levantado
         async function marcarLevantado(id) {
             try {
                 const vehiculo = vehiculos.find(v => v.ID == id);
                 if (!vehiculo) throw new Error("Vehículo no encontrado");
                 
-                // Datos para enviar
                 const payload = {
                     "ID": vehiculo.ID.toString(),
                     "Direccion": vehiculo.Direccion || "",
@@ -208,15 +218,9 @@
                 
                 if (!response.ok) throw new Error("Error en la API");
                 
-                // Eliminar del mapa
-                if (vehiculo.marker) {
-                    map.removeLayer(vehiculo.marker);
-                }
-                
-                // Eliminar del array
+                if (vehiculo.marker) map.removeLayer(vehiculo.marker);
                 vehiculos = vehiculos.filter(v => v.ID != id);
                 
-                // Ocultar alertas si era el vehículo cercano
                 if (marcadorCercano && marcadorCercano === vehiculo.marker) {
                     ocultarAlertas();
                 }
@@ -225,7 +229,7 @@
                 
             } catch (error) {
                 console.error("Error:", error);
-                alert(`❌ Error al actualizar: ${error.message}`);
+                alert(`❌ Error: ${error.message}`);
             }
         }
 
@@ -235,7 +239,7 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Cargar datos y configurar
+        // Cargar datos
         async function init() {
             try {
                 const response = await fetch(SHEETBEST_URL);
@@ -253,38 +257,26 @@
                         };
                     });
                 
-                // Añadir marcadores
+                // Crear marcadores estáticos
                 vehiculos.forEach(v => {
-                    v.marker = L.circleMarker([v.lat, v.lng], {
-                        color: '#ff0000',
-                        fillColor: '#ff4444',
-                        fillOpacity: 0.9,
-                        radius: 10,
-                        weight: 2
-                    }).addTo(map);
-                    
-                    v.marker.bindPopup(`
-                        <div class="popup-custom">
-                            <h4 style="margin: 0 0 8px 0;">Vehículo #${v.ID}</h4>
-                            <p><strong>Dirección:</strong> ${v.Direccion || 'No especificada'}</p>
-                            <button class="btn-levantado" onclick="window.marcarComoLevantado(${v.ID})">
-                                🚗 MARCAR COMO LEVANTADO
-                            </button>
-                        </div>
-                    `);
+                    v.marker = crearMarcadorEstable(v);
                 });
                 
-                // Configurar geolocalización
+                // Configurar GPS de alta precisión
                 map.locate({
                     setView: false,
                     watch: true,
                     enableHighAccuracy: true,
-                    maximumAge: 10000,
+                    maximumAge: 0,
                     timeout: 15000
                 });
                 
                 map.on('locationfound', e => {
                     userLocation = e.latlng;
+                    const precision = e.accuracy; // Precisión en metros
+                    
+                    gpsStatus.textContent = `📍 GPS (Precisión: ${precision.toFixed(0)}m)`;
+                    gpsStatus.style.background = precision < 50 ? '#4CAF50' : '#FFC107';
                     
                     // Actualizar marcador de usuario
                     if (!userMarker) {
@@ -292,29 +284,32 @@
                             color: '#3388ff',
                             fillColor: '#3388ff',
                             fillOpacity: 1,
-                            radius: 8,
+                            radius: 10,
                             weight: 3
-                        }).addTo(map).bindPopup("Tu ubicación actual");
+                        }).addTo(map).bindPopup("¡Estás aquí!");
                     } else {
                         userMarker.setLatLng([userLocation.lat, userLocation.lng]);
                     }
                     
-                    // Iniciar monitoreo de cercanía
-                    if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
-                    intervaloMonitoreo = setInterval(verificarCercania, 3000);
-                    verificarCercania(); // Verificación inmediata
+                    // Iniciar monitoreo solo si la precisión es buena
+                    if (precision < 100) {
+                        if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
+                        intervaloMonitoreo = setInterval(verificarCercania, 3000);
+                        verificarCercania();
+                    }
                 });
                 
                 map.on('locationerror', e => {
-                    console.error("Error de ubicación:", e.message);
-                    alert("Activa la ubicación para alertas de cercanía");
+                    gpsStatus.textContent = "❌ Error de GPS";
+                    gpsStatus.style.background = '#F44336';
+                    console.error("Error GPS:", e.message);
                 });
                 
                 // Hacer función global
                 window.marcarComoLevantado = marcarLevantado;
                 
             } catch (error) {
-                console.error("Error inicial:", error);
+                console.error("Error:", error);
                 alert("Error al cargar datos. Recarga la página.");
             }
         }
