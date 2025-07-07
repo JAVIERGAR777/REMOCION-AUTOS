@@ -115,32 +115,27 @@
     <div id="gps-status">📍 Mi ubicación</div>
     <div id="map"></div>
 
-    <!-- Audio oculto para precargar sonidos -->
     <audio id="alerta-sonido" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
     </audio>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Configuración
-        const SHEETBEST_URL = "https://api.sheetbest.com/sheets/7af0a2e8-4787-4d9b-91c4-4a595367c2cb";
-        const DISTANCIA_ALERTA_KM = 0.5; // 500 metros
-        const INTERVALO_MONITOREO = 3000; // 3 segundos
+        const SHEETBEST_URL = "https://api.sheetbest.com/sheets/a09070af-7ba6-4d20-8e58-edf6aad4513c/tabs/Hoja 4";
+        const DISTANCIA_ALERTA_KM = 0.5; 
+        const INTERVALO_MONITOREO = 3000; 
         let vehiculos = [];
         let userLocation = null;
         let alertasActivas = [];
         let intervaloMonitoreo;
         let userMarker = null;
 
-        // Elementos UI
         const gpsStatus = document.getElementById('gps-status');
         const alertSound = document.getElementById('alerta-sonido');
 
-        // Precargar sonido
         alertSound.volume = 0.7;
         alertSound.load();
 
-        // Cálculo de distancia precisa
         function calcularDistancia(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -152,13 +147,12 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // Crear marcadores estáticos (5px de tamaño)
         function crearMarcadorEstable(vehiculo) {
             const marker = L.circleMarker([vehiculo.lat, vehiculo.lng], {
                 color: '#ff0000',
                 fillColor: '#ff4444',
                 fillOpacity: 0.9,
-                radius: 10, // Tamaño 5px
+                radius: 10, 
                 weight: 5,
                 className: 'marcador-fijo'
             }).addTo(map);
@@ -176,7 +170,6 @@
             return marker;
         }
 
-        // Mostrar alertas múltiples
         function mostrarAlertas(vehiculosCercanos) {
             const alerta = document.getElementById('alerta-container');
             const contenido = document.getElementById('alerta-contenido');
@@ -184,7 +177,6 @@
             const contadorNum = document.getElementById('contador-alertas-num');
             const contadorNum2 = document.getElementById('contador-alertas-num2');
             
-            // Ordenar por distancia (más cercano primero)
             vehiculosCercanos.sort((a, b) => a.distancia - b.distancia);
             
             let htmlContent = '';
@@ -203,14 +195,12 @@
             contenido.innerHTML = htmlContent;
             alerta.style.display = 'block';
             
-            // Actualizar contador
             const numAlertas = vehiculosCercanos.length;
             contadorNum.textContent = numAlertas;
             contadorNum2.textContent = numAlertas;
             
             if (numAlertas > 0) {
                 contadorAlertas.style.display = 'block';
-                // Reproducir sonido solo si hay nuevas alertas
                 if (alertasActivas.length !== numAlertas) {
                     try {
                         alertSound.currentTime = 0;
@@ -224,7 +214,6 @@
             alertasActivas = vehiculosCercanos;
         }
 
-        // Ocultar alertas
         function ocultarAlertas() {
             document.getElementById('alerta-container').style.display = 'none';
             document.getElementById('contador-alertas').style.display = 'none';
@@ -233,14 +222,12 @@
             document.getElementById('contador-alertas-num2').textContent = '0';
         }
 
-        // Centrar mapa en mi ubicación
         function centrarEnMiUbicacion() {
             if (userLocation) {
                 map.setView([userLocation.lat, userLocation.lng], 16);
             }
         }
 
-        // Verificar cercanía para múltiples vehículos
         function verificarCercania() {
             if (!userLocation || vehiculos.length === 0) {
                 ocultarAlertas();
@@ -270,17 +257,14 @@
             }
         }
 
-        // Marcar como levantado - VERSIÓN MEJORADA
         async function marcarLevantado(id) {
             try {
                 const vehiculo = vehiculos.find(v => v.ID == id);
                 if (!vehiculo) throw new Error("Vehículo no encontrado");
                 
-                // 1. Eliminar localmente primero
                 vehiculos = vehiculos.filter(v => v.ID != id);
                 if (vehiculo.marker) map.removeLayer(vehiculo.marker);
                 
-                // 2. Actualizar en SheetBest (con el ID original)
                 const payload = {
                     "ID": vehiculo.ID.toString(),
                     "Direccion": vehiculo.Direccion || "",
@@ -298,7 +282,6 @@
                 
                 if (!response.ok) throw new Error("Error en la API");
                 
-                // 3. Actualizar alertas
                 alertasActivas = alertasActivas.filter(a => a.vehiculo.ID != id);
                 verificarCercania();
                 
@@ -307,27 +290,22 @@
             } catch (error) {
                 console.error("Error:", error);
                 alert(`❌ Error: ${error.message}`);
-                // Recargar datos si hay error
                 init();
             }
         }
 
-        // Inicializar mapa
         const map = L.map('map').setView([-34.9291, -58.0071], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Cargar datos - VERSIÓN MEJORADA
         async function init() {
             try {
                 const response = await fetch(SHEETBEST_URL);
                 const data = await response.json();
                 
-                // Filtrar para mostrar solo el registro más reciente de cada ID
                 const registrosUnicos = {};
                 data.forEach(v => {
-                    // Si no existe o si este registro es más reciente (basado en fecha_levantado si existe)
                     if (
   !registrosUnicos[v.ID] || 
   (v.fecha_levantado &&
@@ -350,17 +328,14 @@
                         };
                     });
                 
-                // Limpiar marcadores antiguos
                 vehiculos.forEach(v => {
                     if (v.marker) map.removeLayer(v.marker);
                 });
                 
-                // Crear nuevos marcadores
                 vehiculos.forEach(v => {
                     v.marker = crearMarcadorEstable(v);
                 });
                 
-                // Configurar GPS
                 map.locate({
                     setView: false,
                     watch: true,
@@ -404,7 +379,6 @@
             }
         }
         
-        // Iniciar la aplicación
         init();
     </script>
 </body>
