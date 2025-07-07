@@ -123,7 +123,7 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         // Configuración
-        const SHEETBEST_URL = "https://api.sheetbest.com/sheets/e9a91f99-312f-43c1-875e-1d8dcbe3a7d5";
+        const SHEETBEST_URL = "https://api.sheetbest.com/sheets/7af0a2e8-4787-4d9b-91c4-4a595367c2cb";
         const DISTANCIA_ALERTA_KM = 0.5; // 500 metros
         const INTERVALO_MONITOREO = 3000; // 3 segundos
         let vehiculos = [];
@@ -270,12 +270,17 @@
             }
         }
 
-        // Marcar como levantado
+        // Marcar como levantado - VERSIÓN MEJORADA
         async function marcarLevantado(id) {
             try {
                 const vehiculo = vehiculos.find(v => v.ID == id);
                 if (!vehiculo) throw new Error("Vehículo no encontrado");
                 
+                // 1. Eliminar localmente primero
+                vehiculos = vehiculos.filter(v => v.ID != id);
+                if (vehiculo.marker) map.removeLayer(vehiculo.marker);
+                
+                // 2. Actualizar en SheetBest (con el ID original)
                 const payload = {
                     "ID": vehiculo.ID.toString(),
                     "Direccion": vehiculo.Direccion || "",
@@ -293,18 +298,17 @@
                 
                 if (!response.ok) throw new Error("Error en la API");
                 
-                if (vehiculo.marker) map.removeLayer(vehiculo.marker);
-                vehiculos = vehiculos.filter(v => v.ID != id);
-                
-                // Verificar si el vehículo estaba en alertas activas
+                // 3. Actualizar alertas
                 alertasActivas = alertasActivas.filter(a => a.vehiculo.ID != id);
+                verificarCercania();
                 
                 alert(`✅ Vehículo ${id} marcado como levantado`);
-                verificarCercania(); // Actualizar alertas inmediatamente
                 
             } catch (error) {
                 console.error("Error:", error);
                 alert(`❌ Error: ${error.message}`);
+                // Recargar datos si hay error
+                init();
             }
         }
 
@@ -314,13 +318,27 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Cargar datos
+        // Cargar datos - VERSIÓN MEJORADA
         async function init() {
             try {
                 const response = await fetch(SHEETBEST_URL);
                 const data = await response.json();
                 
-                vehiculos = data
+                // Filtrar para mostrar solo el registro más reciente de cada ID
+                const registrosUnicos = {};
+                data.forEach(v => {
+                    // Si no existe o si este registro es más reciente (basado en fecha_levantado si existe)
+if (
+  !registrosUnicos[v.ID] || 
+  (v.fecha_levantado &&
+    (!registrosUnicos[v.ID].fecha_levantado ||
+      new Date(v.fecha_levantado) > new Date(registrosUnicos[v.ID].fecha_levantado)))
+) {
+  registrosUnicos[v.ID] = v;
+}
+                });
+                
+                vehiculos = Object.values(registrosUnicos)
                     .filter(v => v.condicion !== "Levantado")
                     .map(v => {
                         const coords = v.Coordenadas.split(',').map(Number);
@@ -332,12 +350,17 @@
                         };
                     });
                 
-                // Crear marcadores estáticos
+                // Limpiar marcadores antiguos
+                vehiculos.forEach(v => {
+                    if (v.marker) map.removeLayer(v.marker);
+                });
+                
+                // Crear nuevos marcadores
                 vehiculos.forEach(v => {
                     v.marker = crearMarcadorEstable(v);
                 });
                 
-                // Configurar GPS de alta precisión con seguimiento en tiempo real
+                // Configurar GPS
                 map.locate({
                     setView: false,
                     watch: true,
@@ -349,20 +372,18 @@
                 map.on('locationfound', e => {
                     userLocation = e.latlng;
                     
-                    // Actualizar marcador de usuario (5px de tamaño)
                     if (!userMarker) {
                         userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
                             color: '#3388ff',
                             fillColor: '#3388ff',
                             fillOpacity: 1,
-                            radius: 5, // Tamaño 5px
+                            radius: 5,
                             weight: 3
                         }).addTo(map).bindPopup("¡Estás aquí!");
                     } else {
                         userMarker.setLatLng([userLocation.lat, userLocation.lng]);
                     }
                     
-                    // Iniciar monitoreo
                     if (intervaloMonitoreo) clearInterval(intervaloMonitoreo);
                     intervaloMonitoreo = setInterval(verificarCercania, INTERVALO_MONITOREO);
                     verificarCercania();
@@ -374,10 +395,7 @@
                     console.error("Error GPS:", e.message);
                 });
                 
-                // Evento para centrar en mi ubicación
                 gpsStatus.addEventListener('click', centrarEnMiUbicacion);
-                
-                // Hacer función global
                 window.marcarComoLevantado = marcarLevantado;
                 
             } catch (error) {
