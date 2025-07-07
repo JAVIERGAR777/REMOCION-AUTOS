@@ -328,14 +328,14 @@
                 const registrosUnicos = {};
                 data.forEach(v => {
                     // Si no existe o si este registro es más reciente (basado en fecha_levantado si existe)
-if (
+                    if (
   !registrosUnicos[v.ID] || 
   (v.fecha_levantado &&
     (!registrosUnicos[v.ID].fecha_levantado ||
       new Date(v.fecha_levantado) > new Date(registrosUnicos[v.ID].fecha_levantado)))
 ) {
   registrosUnicos[v.ID] = v;
-}
+                    }
                 });
                 
                 vehiculos = Object.values(registrosUnicos)
