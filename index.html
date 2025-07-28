@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
     <title>Remocion-Vehículos Quemados</title>
@@ -372,19 +371,73 @@
         const DISTANCIA_ALERTA_KM = 0.5;
         const INTERVALO_MONITOREO = 3000;
         
-        const HEATMAP_CONFIG = {
-            radius: 25,  
-            blur: 15,    
-            maxZoom: 19,
-            minOpacity: 0.5,
-            gradient: {      
-                0.3: 'rgba(0,150,255,0.8)',  
-                0.5: 'rgba(0,255,255,0.9)',  
-                0.7: 'rgba(255,255,0,1)',   
-                0.9: 'rgba(255,100,0,1)',     
-                1.0: 'rgba(255,0,0,1)'       
-            }
+const HEATMAP_CONFIG = {
+    radius: 20, 
+    blur: 15,    
+    maxZoom: 19,
+    minOpacity: 0.5,
+    gradient: {      
+        0.3: 'rgba(0,150,255,0.8)',  
+        0.5: 'rgba(0,255,255,0.9)',  
+        0.7: 'rgba(255,255,0,1)',   
+        0.9: 'rgba(255,100,0,1)',     
+        1.0: 'rgba(255,0,0,1)'       
+    }
+};
+
+async function guardarPoligono() {
+    if (!currentPolygon) {
+        alert("⚠️ No hay ningún polígono para guardar");
+        return;
+    }
+
+    const nombre = document.getElementById('nombre-poligono').value.trim();
+    if (!nombre) {
+        alert("⚠️ Por favor ingresa un nombre para el polígono");
+        return;
+    }
+
+    try {
+        const coords = currentPolygon.getLatLngs()[0];
+        const coordString = coords.map(coord => `${coord.lat},${coord.lng}`).join(';');
+        
+        const payload = {
+            "nombre": nombre,
+            "coordenadas": coordString,
+            "condicion": "Pendiente"
         };
+
+        const response = await fetch(POLIGONOS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error("Error al guardar");
+
+        alert("✅ Polígono guardado correctamente");
+        cancelarDibujoPoligono();
+        document.getElementById('editor-poligonos').style.display = 'none';
+        
+        await cargarPoligonos();
+        if (poligonosActive) mostrarPoligonos();
+
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("❌ Error al guardar el polígono");
+    }
+}
+
+function generarHeatmap() {
+    if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+    }
+    
+    if (vehiculos.length >= 2) {  
+        const puntosCalor = vehiculos.map(v => [v.lat, v.lng, 1.2]);
+        heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
+    }
+}
         
         let vehiculos = [];
         let todosVehiculos = [];
@@ -492,13 +545,13 @@
             
             heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
             
-            map.on('zoomend', function() {
-                if (heatmapActive && heatmapLayer) {
-                    heatmapLayer.setOptions({
-                        radius: Math.max(10, 25 - (map.getZoom() - 12))
-                    });
-                }
-            });
+        map.on('zoomend', function() {
+            if (heatmapActive && heatmapLayer) {
+                heatmapLayer.setOptions({
+                    radius: Math.max(10, 25 - (map.getZoom() - 12))  // Esto hace que el radio cambie con el zoom
+                });
+            }
+        });
         }
 
         function mostrarPoligonos() {
