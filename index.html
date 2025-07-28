@@ -193,7 +193,7 @@
         #editor-poligonos {
             position: fixed;
             top: 15px;
-            left: 15px;
+            left: 70px; 
             background: white;
             padding: 15px;
             border-radius: 10px;
@@ -213,7 +213,7 @@
         #btn-abrir-editor {
             position: fixed;
             top: 15px;
-            left: 15px;
+            left: 70px; 
             background: linear-gradient(135deg, #9C27B0, #7B1FA2);
             color: white;
             border: none;
@@ -223,6 +223,11 @@
             font-weight: bold;
             z-index: 1000;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+        
+        #btn-abrir-editor:active {
+            transform: scale(0.95);
         }
         
         .btn-accion {
@@ -251,6 +256,7 @@
             margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
+            display: none;
         }
         
         .coordenadas-poligono {
@@ -263,6 +269,7 @@
             margin: 10px 0;
             max-height: 100px;
             overflow-y: auto;
+            display: none;
         }
         
         .poligono-pendiente {
@@ -290,6 +297,14 @@
             margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
+        }
+
+        .leaflet-draw-toolbar a {
+            transition: all 0.2s ease;
+        }
+        
+        .leaflet-draw-toolbar a:active {
+            transform: scale(0.9);
         }
     </style>
 </head>
@@ -325,16 +340,16 @@
     </div>
     <div id="contador-alertas">Alertas: <span id="contador-alertas-num2">0</span></div>
     <div id="gps-status">📍 Mi ubicación</div>
-    <div id="heatmap-control" onclick="toggleHeatmap()">🔥 Mapa de Calor</div>
-    <div id="poligonos-control" onclick="togglePoligonos()">🟦 Mostrar Polígonos</div>
+    <button id="heatmap-control" onclick="toggleHeatmap()">🔥 Mapa de Calor</button>
+    <button id="poligonos-control" onclick="togglePoligonos()">🟦 Mostrar Polígonos</button>
     <button id="btn-abrir-editor" onclick="toggleEditorPoligonos()">✏️ Editor de Polígonos</button>
     
     <div id="editor-poligonos">
         <h3>Editor de Polígonos</h3>
         <p>Dibuja un polígono en el mapa haciendo clic para añadir vértices.</p>
         <input type="text" id="nombre-poligono" placeholder="Nombre del polígono" required>
-        <div class="coordenadas-poligono" id="coordenadas-poligono">Coordenadas aparecerán aquí...</div>
-        <select id="condicion-poligono" style="display: none;">
+        <div class="coordenadas-poligono" id="coordenadas-poligono"></div>
+        <select id="condicion-poligono">
             <option value="Pendiente" selected>Pendiente</option>
         </select>
         <button id="btn-guardar-poligono" class="btn-accion" onclick="guardarPoligono()">💾 Guardar Polígono</button>
@@ -476,37 +491,37 @@
             heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
         }
 
-function mostrarPoligonos() {
-    if (poligonosLayer) map.removeLayer(poligonosLayer);
-    poligonosLayer = L.layerGroup().addTo(map);
+        function mostrarPoligonos() {
+            if (poligonosLayer) map.removeLayer(poligonosLayer);
+            poligonosLayer = L.layerGroup().addTo(map);
 
-    poligonos.filter(p => p.condicion === "Pendiente").forEach(poligono => {
-        const coordenadas = poligono.coordenadas.split(';').map(coord => {
-            const [lat, lng] = coord.split(',').map(Number);
-            return [lat, lng];
-        });
+            poligonos.filter(p => p.condicion === "Pendiente").forEach(poligono => {
+                const coordenadas = poligono.coordenadas.split(';').map(coord => {
+                    const [lat, lng] = coord.split(',').map(Number);
+                    return [lat, lng];
+                });
 
-        const polygon = L.polygon(coordenadas, {
-            fillColor: "red",
-            color: "darkred",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.5
-        }).addTo(poligonosLayer);
+                const polygon = L.polygon(coordenadas, {
+                    fillColor: "red",
+                    color: "darkred",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.5
+                }).addTo(poligonosLayer);
 
-        polygon.bindPopup(`
-            <div style="padding: 8px;">
-                <h4 style="margin: 0 0 8px 0;">${poligono.nombre || 'Polígono sin nombre'}</h4>
-                <button 
-                    onclick="eliminarPoligono('${poligono.nombre.replace(/'/g, "\\'")}')"
-                    style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;"
-                >
-                    🗑️ Eliminar
-                </button>
-            </div>
-        `);
-    });
-}
+                polygon.bindPopup(`
+                    <div style="padding: 8px;">
+                        <h4 style="margin: 0 0 8px 0;">${poligono.nombre || 'Polígono sin nombre'}</h4>
+                        <button 
+                            onclick="eliminarPoligono('${poligono.nombre.replace(/'/g, "\\'")}')"
+                            style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;"
+                        >
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                `);
+            });
+        }
 
         async function eliminarPoligono(nombrePoligono) {
             if (!confirm(`¿Estás seguro que deseas eliminar el polígono "${nombrePoligono}"?`)) return;
@@ -605,8 +620,10 @@ function mostrarPoligonos() {
             editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
             
             if (editor.style.display === 'block') {
+                document.getElementById('coordenadas-poligono').style.display = 'block';
                 iniciarDibujoPoligono();
             } else {
+                document.getElementById('coordenadas-poligono').style.display = 'none';
                 cancelarDibujoPoligono();
             }
         }
@@ -665,7 +682,7 @@ function mostrarPoligonos() {
             }
             map.removeLayer(drawnItems);
             currentPolygon = null;
-            document.getElementById('coordenadas-poligono').textContent = "Coordenadas aparecerán aquí...";
+            document.getElementById('coordenadas-poligono').textContent = "";
             document.getElementById('nombre-poligono').value = "";
         }
 
@@ -712,25 +729,25 @@ function mostrarPoligonos() {
             }
         }
 
-async function cargarPoligonos() {
-    try {
-        const response = await fetch(POLIGONOS_URL);
-        const data = await response.json();
-        
-        const poligonosUnicos = {};
-        data.forEach(p => {
-            if (!poligonosUnicos[p.nombre] || p.condicion === "Finalizado") {
-                poligonosUnicos[p.nombre] = p;
+        async function cargarPoligonos() {
+            try {
+                const response = await fetch(POLIGONOS_URL);
+                const data = await response.json();
+                
+                const poligonosUnicos = {};
+                data.forEach(p => {
+                    if (!poligonosUnicos[p.nombre] || p.condicion === "Finalizado") {
+                        poligonosUnicos[p.nombre] = p;
+                    }
+                });
+                
+                poligonos = Object.values(poligonosUnicos).filter(p => p.coordenadas);
+                
+                if (poligonosActive) mostrarPoligonos();
+            } catch (error) {
+                console.error("Error al cargar polígonos:", error);
             }
-        });
-        
-        poligonos = Object.values(poligonosUnicos).filter(p => p.coordenadas);
-        
-        if (poligonosActive) mostrarPoligonos();
-    } catch (error) {
-        console.error("Error al cargar polígonos:", error);
-    }
-}
+        }
 
         async function init() {
             try {
