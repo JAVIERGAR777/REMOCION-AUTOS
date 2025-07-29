@@ -1,3 +1,4 @@
+
 <html>
 <head>
     <title>Remocion-Vehículos Quemados</title>
@@ -371,6 +372,33 @@
         const DISTANCIA_ALERTA_KM = 0.5;
         const INTERVALO_MONITOREO = 3000;
         
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+function getDarkColor(hexColor) {
+    if (!hexColor.startsWith('#')) return '#333'; 
+    
+    try {
+        return '#' + hexColor.slice(1)
+            .match(/.{2}/g)
+            .map(hex => Math.floor(parseInt(hex, 16) * 0.7))
+            .map(n => n.toString(16).padStart(2, '0'))
+            .join('');
+    } catch {
+        return '#333'; 
+    }
+}
+
+const randomColor = getRandomColor();
+const darkColor = getDarkColor(randomColor)
+
+
 const HEATMAP_CONFIG = {
     radius: 20, 
     blur: 15,    
@@ -564,9 +592,15 @@ function generarHeatmap() {
                     return [lat, lng];
                 });
 
+                // Generamos color aleatorio para cada polígono
+                const randomColor = getRandomColor();
+const darkColor = randomColor.startsWith('#') 
+    ? '#' + randomColor.slice(1).replace(/../g, hex => ('0' + Math.min(255, parseInt(hex, 16) * 0.7).toString(16)).slice(-2))
+    : randomColor; // Fallback por si acaso
+
                 const polygon = L.polygon(coordenadas, {
-                    fillColor: "red",
-                    color: "darkred",
+                    fillColor: randomColor,
+                    color: darkColor,
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.5
@@ -575,6 +609,7 @@ function generarHeatmap() {
                 polygon.bindPopup(`
                     <div style="padding: 8px;">
                         <h4 style="margin: 0 0 8px 0;">${poligono.nombre || 'Polígono sin nombre'}</h4>
+                        <p style="color: ${randomColor}">■ Color identificador</p>
                         <button 
                             onclick="eliminarPoligono('${poligono.nombre.replace(/'/g, "\\'")}')"
                             style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;"
