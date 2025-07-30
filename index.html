@@ -865,6 +865,8 @@ const darkColor = randomColor.startsWith('#')
                 vehiculos = todosVehiculos
                     .filter(v => v.condicion !== "Levantado")
                     .map(v => {
+                        if (!v.Coordenadas) return null; 
+                        
                         const coords = v.Coordenadas.split(',').map(Number);
                         return {
                             ...v,
@@ -872,7 +874,8 @@ const darkColor = randomColor.startsWith('#')
                             lng: coords[1],
                             marker: null
                         };
-                    });
+                    })
+                    .filter(v => v !== null); 
                 
                 vehiculos.forEach(v => {
                     if (v.marker) map.removeLayer(v.marker);
