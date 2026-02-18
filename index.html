@@ -1,4 +1,3 @@
-
 <html>
 <head>
     <title>Remocion-Vehículos Quemados</title>
@@ -16,6 +15,244 @@
         #map {
             width: 100%;
             height: 100vh;
+        }
+        
+        #contadores-panel {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+        }
+        .contador-item {
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 40px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 16px;
+            letter-spacing: 0.5px;
+        }
+        .contador-item.quemados {
+            background: linear-gradient(135deg, #ff4d4d, #cc0000);
+        }
+        .contador-item.abandonados {
+            background: linear-gradient(135deg, #ff9933, #cc7a00);
+        }
+        .contador-numero {
+            font-size: 24px;
+            margin-left: 8px;
+            background: rgba(255,255,255,0.25);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: 800;
+        }
+        
+        #buscador-coordenadas {
+            position: fixed;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+            display: flex;
+            gap: 10px;
+            min-width: 500px;
+            border: 2px solid #2196F3;
+        }
+        #input-coordenadas {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 40px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: all 0.3s;
+        }
+        #input-coordenadas:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33,150,243,0.2);
+        }
+        #btn-buscar-coordenadas {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        #btn-buscar-coordenadas:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(33,150,243,0.4);
+        }
+        #btn-limpiar-marcador {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        #btn-limpiar-marcador:hover {
+            background: #d32f2f;
+            transform: scale(1.05);
+        }
+        .marcador-temporal {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        #btn-agregar-vehiculo {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background: linear-gradient(135deg, #00C851, #007E33);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,200,0,0.4);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        #btn-agregar-vehiculo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 25px rgba(0,255,0,0.5);
+        }
+        
+        #form-vehiculo-container {
+            position: fixed;
+            top: 50%;
+            left: 30px;
+            transform: translateY(-50%);
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 3000;
+            width: 350px;
+            display: none;
+            border: 2px solid #00C851;
+        }
+        #form-vehiculo-container h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #00C851;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #00C851;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,200,0,0.1);
+        }
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .coordenadas-seleccionadas {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-guardar-form {
+            background: #00C851;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 2;
+            transition: all 0.3s;
+        }
+        .btn-guardar-form:hover {
+            background: #007E33;
+        }
+        .btn-cancelar-form {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            transition: all 0.3s;
+        }
+        .btn-cancelar-form:hover {
+            background: #cc0000;
+        }
+        .tipo-vehiculo {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .tipo-vehiculo label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+            cursor: pointer;
         }
         
         #alerta-container {
@@ -154,7 +391,7 @@
         
         #heatmap-control {
             position: fixed;
-            top: 110px;
+            top: 160px;
             right: 15px;
             background: linear-gradient(135deg, #ff8c00, #ff4500);
             color: white;
@@ -173,7 +410,7 @@
         
         #poligonos-control {
             position: fixed;
-            top: 160px;
+            top: 210px;
             right: 15px;
             background: linear-gradient(135deg, #9C27B0, #7B1FA2);
             color: white;
@@ -309,6 +546,69 @@
     </style>
 </head>
 <body>
+    <div id="contadores-panel">
+        <div class="contador-item quemados">
+            🔥 VEHÍCULOS QUEMADOS <span id="contador-quemados" class="contador-numero">0</span>
+        </div>
+        <div class="contador-item abandonados">
+            🚗 VEHÍCULOS ABANDONADOS <span id="contador-abandonados" class="contador-numero">0</span>
+        </div>
+    </div>
+
+    <div id="buscador-coordenadas">
+        <input type="text" id="input-coordenadas" placeholder="Pega las coordenadas aquí... ej: -34.9250, -57.9841" value="">
+        <button id="btn-buscar-coordenadas" onclick="buscarCoordenadas()">
+            🔍 BUSCAR
+        </button>
+        <button id="btn-limpiar-marcador" onclick="limpiarMarcadorTemporal()">
+            ✖ LIMPIAR
+        </button>
+    </div>
+
+    <div id="form-vehiculo-container">
+        <h3>➕ AGREGAR VEHÍCULO</h3>
+        <div class="coordenadas-seleccionadas" id="coordenadas-seleccionadas">
+            Haz clic en el mapa para seleccionar la ubicación
+        </div>
+        
+        <div class="form-group">
+            <label>ID del Vehículo:</label>
+            <input type="text" id="nuevo-id" placeholder="Ej:540" value="" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Dirección:</label>
+            <input type="text" id="nueva-direccion" placeholder="Calle, entre calle,etc" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Delegación:</label>
+            <input type="text" id="nueva-delegacion" placeholder="Ej: Centro, Norte, etc." required>
+        </div>
+        
+        <div class="form-group">
+            <label>Tipo de Vehículo:</label>
+            <div class="tipo-vehiculo">
+                <label>
+                    <input type="radio" name="tipo" value="quemado" checked> 🔥 Quemado
+                </label>
+                <label>
+                    <input type="radio" name="tipo" value="abandonado"> 🚗 Abandonado
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Descripción adicional:</label>
+            <textarea id="nueva-descripcion" placeholder="Color, modelo, detalles..."></textarea>
+        </div>
+        
+        <div class="form-buttons">
+            <button class="btn-guardar-form" onclick="guardarNuevoVehiculo()">💾 GUARDAR</button>
+            <button class="btn-cancelar-form" onclick="cerrarFormularioVehiculo()">✖</button>
+        </div>
+    </div>
+
     <div id="tabla-vehiculos-container">
         <button class="btn-cerrar-tabla" onclick="cerrarTabla()">❌ Cerrar Tabla</button>
         <h2>📊 Base de Datos de Vehículos</h2>
@@ -330,6 +630,9 @@
     </div>
 
     <button class="btn-ver-tabla" onclick="mostrarTabla()">📋 Ver Base de Datos</button>
+    <button id="btn-agregar-vehiculo" onclick="mostrarFormularioVehiculo()">
+        <span style="font-size: 20px;">➕</span> AGREGAR VEHÍCULO
+    </button>
 
     <div id="alerta-container">
         <div id="alerta-header">
@@ -354,7 +657,6 @@
         </select>
         <button id="btn-guardar-poligono" class="btn-accion" onclick="guardarPoligono()">💾 Guardar Polígono</button>
         <button id="btn-cancelar-poligono" class="btn-accion" onclick="cancelarDibujoPoligono(); document.getElementById('editor-poligonos').style.display = 'none';">❌ Cancelar</button>
-
     </div>
 
     <div id="map"></div>
@@ -372,100 +674,197 @@
         const DISTANCIA_ALERTA_KM = 0.5;
         const INTERVALO_MONITOREO = 3000;
         
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
-
-function getDarkColor(hexColor) {
-    if (!hexColor.startsWith('#')) return '#333'; 
-    
-    try {
-        return '#' + hexColor.slice(1)
-            .match(/.{2}/g)
-            .map(hex => Math.floor(parseInt(hex, 16) * 0.7))
-            .map(n => n.toString(16).padStart(2, '0'))
-            .join('');
-    } catch {
-        return '#333'; 
-    }
-}
-
-const randomColor = getRandomColor();
-const darkColor = getDarkColor(randomColor)
-
-
-const HEATMAP_CONFIG = {
-    radius: 20, 
-    blur: 15,    
-    maxZoom: 19,
-    minOpacity: 0.5,
-    gradient: {      
-        0.3: 'rgba(0,150,255,0.8)',  
-        0.5: 'rgba(0,255,255,0.9)',  
-        0.7: 'rgba(255,255,0,1)',   
-        0.9: 'rgba(255,100,0,1)',     
-        1.0: 'rgba(255,0,0,1)'       
-    }
-};
-
-async function guardarPoligono() {
-    if (!currentPolygon) {
-        alert("⚠️ No hay ningún polígono para guardar");
-        return;
-    }
-
-    const nombre = document.getElementById('nombre-poligono').value.trim();
-    if (!nombre) {
-        alert("⚠️ Por favor ingresa un nombre para el polígono");
-        return;
-    }
-
-    try {
-        const coords = currentPolygon.getLatLngs()[0];
-        const coordString = coords.map(coord => `${coord.lat},${coord.lng}`).join(';');
+        let marcadorTemporal = null;
         
-        const payload = {
-            "nombre": nombre,
-            "coordenadas": coordString,
-            "condicion": "Pendiente"
-        };
-
-        const response = await fetch(POLIGONOS_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+        const marcadorTemporalIcon = L.divIcon({
+            className: 'marcador-temporal',
+            html: '📍',
+            iconSize: [32, 32],
+            popupAnchor: [0, -16]
         });
 
-        if (!response.ok) throw new Error("Error al guardar");
-
-        alert("✅ Polígono guardado correctamente");
-        cancelarDibujoPoligono();
-        document.getElementById('editor-poligonos').style.display = 'none';
+        let ubicacionSeleccionada = null;
+        let markerSeleccion = null;
         
-        await cargarPoligonos();
-        if (poligonosActive) mostrarPoligonos();
+        const llamaIcon = L.divIcon({
+            className: 'llama-marker',
+            html: '🔥',
+            iconSize: [24, 24],
+            popupAnchor: [0, -12]
+        });
 
-    } catch (error) {
-        console.error("Error al guardar:", error);
-        alert("❌ Error al guardar el polígono");
-    }
-}
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
 
-function generarHeatmap() {
-    if (heatmapLayer) {
-        map.removeLayer(heatmapLayer);
-    }
-    
-    if (vehiculos.length >= 2) {  
-        const puntosCalor = vehiculos.map(v => [v.lat, v.lng, 1.2]);
-        heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
-    }
-}
+        function getDarkColor(hexColor) {
+            if (!hexColor.startsWith('#')) return '#333'; 
+            try {
+                return '#' + hexColor.slice(1)
+                    .match(/.{2}/g)
+                    .map(hex => Math.floor(parseInt(hex, 16) * 0.7))
+                    .map(n => n.toString(16).padStart(2, '0'))
+                    .join('');
+            } catch {
+                return '#333'; 
+            }
+        }
+
+        const HEATMAP_CONFIG = {
+            radius: 20, 
+            blur: 15,    
+            maxZoom: 19,
+            minOpacity: 0.5,
+            gradient: {      
+                0.3: 'rgba(0,150,255,0.8)',  
+                0.5: 'rgba(0,255,255,0.9)',  
+                0.7: 'rgba(255,255,0,1)',   
+                0.9: 'rgba(255,100,0,1)',     
+                1.0: 'rgba(255,0,0,1)'       
+            }
+        };
+
+        function buscarCoordenadas() {
+            const input = document.getElementById('input-coordenadas').value.trim();
+            
+            const coordsLimpio = input.replace(/\s+/g, '');
+            
+            const partes = coordsLimpio.split(',');
+            
+            if (partes.length !== 2) {
+                alert('❌ Formato incorrecto. Usa: latitud, longitud (ej: -34.9250, -57.9841)');
+                return;
+            }
+            
+            const lat = parseFloat(partes[0]);
+            const lng = parseFloat(partes[1]);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('❌ Las coordenadas deben ser números válidos');
+                return;
+            }
+            
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                alert('❌ Coordenadas fuera de rango');
+                return;
+            }
+            
+            limpiarMarcadorTemporal();
+            
+            marcadorTemporal = L.marker([lat, lng], { 
+                icon: marcadorTemporalIcon,
+                zIndexOffset: 1000
+            }).addTo(map);
+            
+            marcadorTemporal.bindPopup(`
+                <div style="text-align: center; padding: 8px;">
+                    <h4 style="margin: 0 0 8px 0;">📍 Ubicación buscada</h4>
+                    <p><strong>Lat:</strong> ${lat.toFixed(6)}</p>
+                    <p><strong>Lng:</strong> ${lng.toFixed(6)}</p>
+                    <button onclick="usarCoordenadasParaAgregar(${lat}, ${lng})" 
+                        style="background: #00C851; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 5px;">
+                        ➕ Usar para agregar vehículo
+                    </button>
+                </div>
+            `);
+            
+            map.setView([lat, lng], 18);
+            
+            marcadorTemporal.openPopup();
+        }
+
+        function limpiarMarcadorTemporal() {
+            if (marcadorTemporal) {
+                map.removeLayer(marcadorTemporal);
+                marcadorTemporal = null;
+            }
+        }
+
+        function usarCoordenadasParaAgregar(lat, lng) {
+            mostrarFormularioVehiculo();
+            ubicacionSeleccionada = { lat, lng };
+            
+            if (markerSeleccion) {
+                map.removeLayer(markerSeleccion);
+            }
+            
+            const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked').value;
+            if (tipoSeleccionado === 'quemado') {
+                markerSeleccion = L.marker([lat, lng], { icon: llamaIcon }).addTo(map);
+            } else {
+                markerSeleccion = L.circleMarker([lat, lng], {
+                    color: '#ff9933',
+                    fillColor: '#ff9933',
+                    fillOpacity: 0.9,
+                    radius: 6,
+                    weight: 2
+                }).addTo(map);
+            }
+            
+            document.getElementById('coordenadas-seleccionadas').innerHTML = 
+                `📍 Ubicación seleccionada:<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`;
+            
+            limpiarMarcadorTemporal();
+        }
+
+        async function guardarPoligono() {
+            if (!currentPolygon) {
+                alert("⚠️ No hay ningún polígono para guardar");
+                return;
+            }
+
+            const nombre = document.getElementById('nombre-poligono').value.trim();
+            if (!nombre) {
+                alert("⚠️ Por favor ingresa un nombre para el polígono");
+                return;
+            }
+
+            try {
+                const coords = currentPolygon.getLatLngs()[0];
+                const coordString = coords.map(coord => `${coord.lat},${coord.lng}`).join(';');
+                
+                const payload = {
+                    "nombre": nombre,
+                    "coordenadas": coordString,
+                    "condicion": "Pendiente"
+                };
+
+                const response = await fetch(POLIGONOS_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Error al guardar");
+
+                alert("✅ Polígono guardado correctamente");
+                cancelarDibujoPoligono();
+                document.getElementById('editor-poligonos').style.display = 'none';
+                
+                await cargarPoligonos();
+                if (poligonosActive) mostrarPoligonos();
+
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                alert("❌ Error al guardar el polígono");
+            }
+        }
+
+        function generarHeatmap() {
+            if (heatmapLayer) {
+                map.removeLayer(heatmapLayer);
+            }
+            
+            if (vehiculos.length >= 2) {  
+                const puntosCalor = vehiculos.map(v => [v.lat, v.lng, 1.2]);
+                heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
+            }
+        }
         
         let vehiculos = [];
         let todosVehiculos = [];
@@ -483,6 +882,122 @@ function generarHeatmap() {
         let drawnItems = new L.FeatureGroup();
         let currentPolygon = null;
         let drawHandler = null;
+
+        function actualizarContadores() {
+            let quemados = 0;
+            let abandonados = 0;
+            
+            vehiculos.forEach(v => {
+                const desc = (v.Descripcion || '').toLowerCase();
+                if (desc.includes('quemado')) {
+                    quemados++;
+                } else {
+                    abandonados++;
+                }
+            });
+            
+            document.getElementById('contador-quemados').textContent = quemados;
+            document.getElementById('contador-abandonados').textContent = abandonados;
+        }
+
+        function mostrarFormularioVehiculo() {
+            document.getElementById('form-vehiculo-container').style.display = 'block';
+            
+            document.getElementById('nuevo-id').value = '';
+            document.getElementById('nueva-direccion').value = '';
+            document.getElementById('nueva-delegacion').value = '';
+            document.getElementById('nueva-descripcion').value = '';
+            
+            if (!ubicacionSeleccionada) {
+                map.getContainer().style.cursor = 'crosshair';
+                
+                map.once('click', function(e) {
+                    ubicacionSeleccionada = e.latlng;
+                    
+                    if (markerSeleccion) {
+                        map.removeLayer(markerSeleccion);
+                    }
+                    
+                    const tipoSeleccionado = document.querySelector('input[name="tipo"]:checked').value;
+                    if (tipoSeleccionado === 'quemado') {
+                        markerSeleccion = L.marker([ubicacionSeleccionada.lat, ubicacionSeleccionada.lng], { icon: llamaIcon }).addTo(map);
+                    } else {
+                        markerSeleccion = L.circleMarker([ubicacionSeleccionada.lat, ubicacionSeleccionada.lng], {
+                            color: '#ff9933',
+                            fillColor: '#ff9933',
+                            fillOpacity: 0.9,
+                            radius: 6,
+                            weight: 2
+                        }).addTo(map);
+                    }
+                    
+                    document.getElementById('coordenadas-seleccionadas').innerHTML = 
+                        `📍 Ubicación seleccionada:<br>Lat: ${ubicacionSeleccionada.lat.toFixed(6)}<br>Lng: ${ubicacionSeleccionada.lng.toFixed(6)}`;
+                    
+                    map.getContainer().style.cursor = '';
+                });
+            }
+        }
+
+        function cerrarFormularioVehiculo() {
+            document.getElementById('form-vehiculo-container').style.display = 'none';
+            if (markerSeleccion) {
+                map.removeLayer(markerSeleccion);
+                markerSeleccion = null;
+            }
+            map.getContainer().style.cursor = '';
+            ubicacionSeleccionada = null;
+        }
+
+        async function guardarNuevoVehiculo() {
+            if (!ubicacionSeleccionada) {
+                alert("⚠️ Primero selecciona una ubicación en el mapa");
+                return;
+            }
+
+            const id = document.getElementById('nuevo-id').value.trim();
+            const direccion = document.getElementById('nueva-direccion').value.trim();
+            const delegacion = document.getElementById('nueva-delegacion').value.trim();
+            const tipo = document.querySelector('input[name="tipo"]:checked').value;
+            const descripcion = document.getElementById('nueva-descripcion').value.trim();
+
+            if (!id || !direccion || !delegacion) {
+                alert("⚠️ Por favor completa todos los campos obligatorios (ID, Dirección y Delegación)");
+                return;
+            }
+
+            const descripcionCompleta = tipo === 'quemado' 
+                ? `🔥 Quemado - ${descripcion}` 
+                : `🚗 Abandonado - ${descripcion}`;
+
+            const payload = {
+                "ID": id,
+                "Direccion": direccion,
+                "Delegación": delegacion, 
+                "Coordenadas": `${ubicacionSeleccionada.lat}, ${ubicacionSeleccionada.lng}`,
+                "Descripcion": descripcionCompleta,
+                "condicion": "Activo",
+                "fecha_levantado": ""
+            };
+
+            try {
+                const response = await fetch(SHEETBEST_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("Error al guardar");
+
+                alert("✅ Vehículo agregado correctamente");
+                cerrarFormularioVehiculo();
+                await init(); 
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("❌ Error al guardar el vehículo");
+            }
+        }
 
         function mostrarTabla() {
             document.getElementById('tabla-vehiculos-container').style.display = 'block';
@@ -573,13 +1088,13 @@ function generarHeatmap() {
             
             heatmapLayer = L.heatLayer(puntosCalor, HEATMAP_CONFIG).addTo(map);
             
-        map.on('zoomend', function() {
-            if (heatmapActive && heatmapLayer) {
-                heatmapLayer.setOptions({
-                    radius: Math.max(10, 25 - (map.getZoom() - 12))  // Esto hace que el radio cambie con el zoom
-                });
-            }
-        });
+            map.on('zoomend', function() {
+                if (heatmapActive && heatmapLayer) {
+                    heatmapLayer.setOptions({
+                        radius: Math.max(10, 25 - (map.getZoom() - 12))
+                    });
+                }
+            });
         }
 
         function mostrarPoligonos() {
@@ -592,11 +1107,10 @@ function generarHeatmap() {
                     return [lat, lng];
                 });
 
-                // Generamos color aleatorio para cada polígono
                 const randomColor = getRandomColor();
-const darkColor = randomColor.startsWith('#') 
-    ? '#' + randomColor.slice(1).replace(/../g, hex => ('0' + Math.min(255, parseInt(hex, 16) * 0.7).toString(16)).slice(-2))
-    : randomColor; // Fallback por si acaso
+                const darkColor = randomColor.startsWith('#') 
+                    ? '#' + randomColor.slice(1).replace(/../g, hex => ('0' + Math.min(255, parseInt(hex, 16) * 0.7).toString(16)).slice(-2))
+                    : randomColor;
 
                 const polygon = L.polygon(coordenadas, {
                     fillColor: randomColor,
@@ -661,18 +1175,27 @@ const darkColor = randomColor.startsWith('#')
         }
 
         function crearMarcadorEstable(vehiculo) {
-            const marker = L.circleMarker([vehiculo.lat, vehiculo.lng], {
-                color: '#0833A2',
-                fillColor: '#0833A2',
-                fillOpacity: 0.9,
-                radius: 4,
-                weight: 2
-            }).addTo(map);
+            let marker;
+            const descripcion = vehiculo.Descripcion ? vehiculo.Descripcion.toLowerCase() : '';
+
+            if (descripcion.includes('quemado') || descripcion.includes('quemados')) {
+                marker = L.marker([vehiculo.lat, vehiculo.lng], { icon: llamaIcon }).addTo(map);
+            } else {
+                marker = L.circleMarker([vehiculo.lat, vehiculo.lng], {
+                    color: '#0833A2',
+                    fillColor: '#0833A2',
+                    fillOpacity: 0.9,
+                    radius: 4,
+                    weight: 2
+                }).addTo(map);
+            }
             
             marker.bindPopup(`
                 <div class="popup-custom">
                     <h4 style="margin: 0 0 8px 0;">Vehículo #${vehiculo.ID}</h4>
                     <p><strong>Dirección:</strong> ${vehiculo.Direccion || 'N/A'}</p>
+                    <p><strong>Delegación:</strong> ${vehiculo.Delegación || 'N/A'}</p>
+                    <p><strong>Descripción:</strong> ${vehiculo.Descripcion || 'N/A'}</p>
                     <button class="btn-levantado" onclick="marcarComoLevantado(${vehiculo.ID})">
                         🚗 MARCAR COMO LEVANTADO
                     </button>
@@ -693,6 +1216,7 @@ const darkColor = randomColor.startsWith('#')
                 const payload = {
                     "ID": vehiculo.ID.toString(),
                     "Direccion": vehiculo.Direccion || "",
+                    "Delegación": vehiculo.Delegación || "",
                     "Coordenadas": `${vehiculo.lat}, ${vehiculo.lng}`,
                     "Descripcion": vehiculo.Descripcion || "",
                     "condicion": "Levantado",
@@ -706,7 +1230,7 @@ const darkColor = randomColor.startsWith('#')
                 });
                 
                 alert(`✅ Vehículo #${id} marcado como levantado`);
-                init(); 
+                await init();
             } catch (error) {
                 console.error("Error:", error);
                 alert(`❌ Error: ${error.message}`);
@@ -826,6 +1350,7 @@ const darkColor = randomColor.startsWith('#')
                 });
             }
         }
+
         async function cargarPoligonos() {
             try {
                 const response = await fetch(POLIGONOS_URL);
@@ -877,10 +1402,14 @@ const darkColor = randomColor.startsWith('#')
                     })
                     .filter(v => v !== null); 
                 
-                vehiculos.forEach(v => {
-                    if (v.marker) map.removeLayer(v.marker);
-                    v.marker = crearMarcadorEstable(v);
-                });
+                if (vehiculos.length > 0) {
+                    vehiculos.forEach(v => {
+                        if (v.marker) map.removeLayer(v.marker);
+                        v.marker = crearMarcadorEstable(v);
+                    });
+                }
+                
+                actualizarContadores();
                 
                 if (heatmapActive) {
                     generarHeatmap();
@@ -985,5 +1514,3 @@ const darkColor = randomColor.startsWith('#')
     </script>
 </body>
 </html>
-
-
